@@ -67,12 +67,14 @@ Learning.} %CHANGE accordingly
 
 %%% - B2 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 %%% Customize this part: text between - B2 - and - E2 - must not appear in the final report 
-The three-body problem is a classic problem in physics, exhibiting chaotic behavior \cite{birkhoff1927dynamical}. In the early days of computing N body systems ($N>2$) were used as an example to evaluate computational stability using different numerical formats, e.g. floats, double precision, etc \cite{DejongheAndHut1986}. One paper \cite{Breen_2020} claimed to have solved the three-body problem using an artificial neural network, probably a Multi-Layer Perceptron, but limited the results to bodies with initial speeds of 0. The work on the three-body problem was continued using a physics-informed neural networks (PINN) \cite{pereira2025advancingsolutionsthreebodyproblem}.
+The three-body problem is a classic problem in physics, exhibiting chaotic behavior \cite{birkhoff1927dynamical}. In the early days of computing N-body systems ($N>2$) were used as an example to evaluate computational stability using different numerical formats, e.g. floats, double precision, etc \cite{DejongheAndHut1986}. One paper \cite{Breen_2020} claimed to have solved the three-body problem using an artificial neural network, probably a Multi-Layer Perceptron, but limited the results to bodies with initial speeds of 0. The work on the three-body problem was continued using a physics-informed neural networks (PINN) \cite{pereira2025advancingsolutionsthreebodyproblem}.
 %was criticized for exaggerating the results \cite{LiLiLiao2020}. 
 The prediction of chaotic systems, like weather and turbulent flows, remains a major challenge in both physics and machine learning due to their sensitivity to initial conditions. In several papers the chaotic Lorenz 63 or 96 systems are used for testing the performance of neural network models \cite{vlachas2018data, Chattopadhyay2019} and Kuramoto-Sivashinsky equation (used for flame propagation) in \cite{pathak2018model, vlachas2018data}. The three-body problem may not be as useful for neural network training due to its disruptive behavior when bodies collide or escape.
 
 Time series forecasting have traditionally used recurring neural networks (RNNs) as best practice \cite{vlachas2018data}, but recently several other approaches have proved capable of matching the performance of the RNNs. In particular, reservoir computing (RC) has emerged as a compelling model-free strategy \cite{pathak2018model, Chattopadhyay2019}, offering the ability to learn temporal dynamics, even in chaotic systems. One-dimensional temporal convolutional networks (TCN) often outperform canonical RNNs such as long-short-term memory (LSTM) networks in multiple sequence modeling tasks \cite{bai2018empiricalevaluationgenericconvolutional, luo2024moderntcn}. 
 
+
+The aim of this study is to evaluate the ability of three neural network architectures to forecast the trajectories of the bodies in the three-body system. Rather than trying to classify the system outcome, the focus is on learning an accurate time evolution of the dynamics of the system.
 
 %%%%% Some notes:
 \iffalse
@@ -114,8 +116,7 @@ Several data-driven models have been proposed for forecasting chaotic time serie
     \end{tabular}
 \end{table*}
 
-Given the trade-offs, three models were selected for implementation and comparison: RC, LSTM, and TCN. The PINN approach was excluded due to the lack of energy conservation in the simulated system, which violated its assumptions.
-LSTM was chosen as a classical baseline for time series forecasting, given its strength in modeling recurrent patterns. TCN, a modern 1D convolutional neural network architecture, was included due to its recent success in outperforming traditional RNNs on similar tasks. Finally, RC was selected for its demonstrated effectiveness in forecasting chaotic dynamics.
+Given the trade-offs, three models were selected for implementation and comparison: RC, LSTM, and TCN. The PINN approach was excluded due to the lack of energy conservation in the simulated system. LSTM was chosen as a classical baseline for time series forecasting, given its strength in modeling recurrent patterns. TCN, a modern 1D convolutional neural network architecture, was included due to its recent success in outperforming traditional RNNs on multiple tasks. Finally, RC was selected for its demonstrated effectiveness in forecasting chaotic dynamics.
 
 %%%%% Some notes:
 \iffalse
@@ -136,19 +137,19 @@ LSTM was chosen as a classical baseline for time series forecasting, given its s
 
 \subsection{Data Generation}
 
-Simulated multiple 2D three-body systems with varying initial conditions with Newtonian gravity and numerically integrated motion using the \textbf{Leapfrog method}. The system was dimensionless with a gravitational constant of 1. Two of the bodies had similar masses, whereas the third had half the mass.
+The three-body system was simulated in 2D with varying initial velocity in the x and y directions, with Newtonian gravity and numerically integrated motion using the Leapfrog method. The system was dimensionless with a gravitational constant of 1. Two of the bodies had similar masses, whereas the third had half the mass.
 Each simulation was labeled as: 
 
 \begin{itemize}
-    \item \texttt{converging} - Figure \ref{fig:classes} (a)): A collision is said to occur when the distance between any two bodies is less than or equal to the sum of their radii.
+    \item \texttt{converging} - figure \ref{fig:classes} (a): A collision occurs when the distance between any two bodies is less than or equal to the sum of their radii.
     
-    \item \texttt{diverging} - Figure \ref{fig:classes} (b): A simplified form of Birkhoff's escape criterion \cite{birkhoff1927dynamical} was used. A system was considered diverging when the total mechanical energy of a body exceeded a threshold $\varepsilon$, set to 2:
+    \item \texttt{diverging} - figure \ref{fig:classes} (b): A simplified form of Birkhoff's escape criterion \cite{birkhoff1927dynamical} was used. A system was considered diverging when the total energy of a body exceeded a threshold $\varepsilon$, set to 2:
     \[
     \underbrace{\frac{1}{2}m_i v_i^2}_{\text{Kinetic Energy}} \underbrace{-\sum_{i \ne j} \frac{G m_i m_j}{r_{ij}}}_{\text{Potential Energy}} > \varepsilon
     \] 
     where $m_i$ is the mass of body $i$, $v_i$ its speed, $G$ the gravitational constant, and $r_{ij}$ the distance between bodies $i$ and $j$.
 
-    \item \texttt{stable} - Figure \ref{fig:classes} (c): The system is considered stable if it completes 800 time steps (each of size 0.01) without any collisions or escapes.
+    \item \texttt{stable} - figure \ref{fig:classes} (c): The system is considered stable if it completes 800 time-steps (each of size 0.01) without any collisions or escapes.
 \end{itemize}
 
 
@@ -172,13 +173,12 @@ Each simulation was labeled as:
 \caption{\textbf{Three body simulation.} The simulated trajectories for the three bodies for the different classes (a) converging, (b) diverging and (c) stable.}
 \label{fig:classes}    
 \end{figure}
-        
 
-The original goal of classifying system outcomes from predicted trajectories was revised due to uneven simulation lengths, limited model accuracy, and the inability to resolve fine differences between collisions and escapes. Instead, the goal was set to predict the trajectories of the bodies as accurate as possible. Therefore, only simulations reaching 800 time steps were used in the training of the neural networks. That resulted in 2352 sequences which was divided into 1881 for training and 235 each for validation and testing. Time series of positions and velocities were extracted for all three bodies. Input sequences of 200 time steps and output sequences of 600 time steps were used.
+The original goal of classifying system outcomes from predicted trajectories was revised due to uneven simulation lengths, limited model accuracy, and the inability to resolve fine differences between collisions and escapes. Therefore, only simulations reaching 800 time-steps were used in the training of the neural networks. That resulted in 2352 sequences which was divided into 1881 for training and 235 each for validation and testing. Time series of positions and velocities were extracted for all three bodies, giving input and output sequences of 200 and 600 time-steps respectively.
 
 
 \subsection{Modeling Approaches}
-Two approaches for time series forecasting were tested. The first was to predict the state of the system one time step ahead. Then to iteratively predict the next step until the final state of the system based on previous predictions. The next approach was to predict the entire forecast horizon at once. The latter proved to be most successful, so all models were adapted to forecast the full future trajectory of the three-body system over 600 time steps, with 12 variables per step (positions and velocities of three bodies in 2D). 
+Two approaches for time series forecasting were tested. The first was to predict the state of the system one time step ahead, then iteratively predict the next step based on previous predictions, until the final state of the system. The next approach was to predict the entire forecast horizon at once. The latter proved to be most successful, so all models were adapted to forecast the full future trajectory of the three-body system over 600 time-steps, with 12 variables per step (positions and velocities of three bodies in 2D). 
 
 \begin{figure}
     \centering
@@ -189,23 +189,17 @@ Two approaches for time series forecasting were tested. The first was to predict
 
 %Models are shown in figure \ref{fig:methodoverview}.
 
-\textbf{LSTM}:
+
 A 4-layer LSTM with 256 hidden units was used to model temporal dependencies. The final hidden state initializes a decoder, which generates the full 600-step forecast. A fully connected layer maps each step to a 12-dimensional output; see figure~\ref{fig:methodoverview}.
 
-\textbf{TCN}:
+
 The TCN uses three dilated 1D convolutional layers with hidden sizes [256, 512, 256], kernel size 3, and dilations 1, 2, and 4. Each layer includes batch normalization, ReLU activation, and residual connections. The final output is produced via a linear layer and reshaped to $(600, 12)$; see figure~\ref{fig:methodoverview}.
 
-\textbf{RC}:
-An Echo State Network with a fixed 1750-unit reservoir was used for model-free forecasting. The reservoir state $\mathbf{r}(t)$ is updated via:
-\[
-\mathbf{r}(t+1) = \tanh(\mathbf{W}_{\text{in}}\mathbf{u}(t) + \mathbf{W}\mathbf{r}(t)),
-\quad
-\hat{\mathbf{y}}(t) = \mathbf{W}_{\text{out}}\mathbf{r}(t),
-\]
-where only $\mathbf{W}_{\text{out}}$ is trained using ridge regression. See figure~\ref{fig:methodoverview}.
+
+An Echo State Network with a fixed 1750-unit reservoir was used for model-free forecasting. The reservoir state is updated by applying a tanh activation to a weighted sum of the input and previous state, while the output is a linear projection of the reservoir. Only the output weights are trained, using ridge regression; see figure~\ref{fig:methodoverview}.
 
 
-Finally, as it was realized that TCN and RC models had different skills, they were joined to a combined model (TCN+RC), where the TCN would use its skills to predict the long time state of the system and the RC would predict the residuals and thereby contribute to improving the forecast.
+Finally, as it was realized that the TCN and RC models had different skills, they were joined to a combined model (TCN+RC), where the TCN would use its ability to predict the long-time state of the system and the RC would predict the residuals and thereby improve the forecast.
 
 The Lyapunov time was calculated to relate the time to other chaotic systems and natural phenomena. This was done by perturbing one of the initial positions by $10^{-8}$ and looking at the distance between objects in the perturbed system compared to the original. A Model Time Unit (MTU) was calculated by fitting a line to a part of the system where the log of distance increased linearly. 
 
@@ -213,7 +207,7 @@ Furthermore, the energy should be conserved in the system, so to see how it beha
 
 \iffalse
 \begin{itemize}
-    \item Method: Describe data generation and selecting stable, converging and diverging systems. Show and describe the figures. 800 steps maximum. Input sequence length and forecasting 600 time steps. Also tested a regressive method, only forecasting one timestep and forecasting the next step based on the forecasted data. This was abandoned as the forecasting in one go performed better. Describe each neural network method and the theory of each. Initially the idea was to predict the trajectories of the objects and then, based on the trajectories, check if the objects would collide, escape or remain stable. However, due to three reasons, the study focuses on predicting the trajectories of the objects rather than classifying the outcome: Simulation length. When objects collide or escape, the simulation was terminated giving it a length shorter than that of the stable case. For the system to learn properly, it was better to use longer sequences of data, which would favor the stable case. The models did not perform well enough for a meaningful classification based on the trajectories. When the bodies passed very close, the difference between a collision and escape due to the catapulting effect was well below the accuracy of the models. Only the stable sequences with 800 time steps were chosen train the neural network models. The Lyapunov time was calculated to relate the time to other chaotic systems and natural phenomena. Figure shows the Lyapunov lambda and time. A Model Time Unit (MTU) was calculated. The energy should be conserved in the system, so to see how it behaved, it was calculated for the simulation and for the neural network models.
+    \item Method: Describe data generation and selecting stable, converging and diverging systems. Show and describe the figures. 800 steps maximum. Input sequence length and forecasting 600 time-steps. Also tested a regressive method, only forecasting one timestep and forecasting the next step based on the forecasted data. This was abandoned as the forecasting in one go performed better. Describe each neural network method and the theory of each. Initially the idea was to predict the trajectories of the objects and then, based on the trajectories, check if the objects would collide, escape or remain stable. However, due to three reasons, the study focuses on predicting the trajectories of the objects rather than classifying the outcome: Simulation length. When objects collide or escape, the simulation was terminated giving it a length shorter than that of the stable case. For the system to learn properly, it was better to use longer sequences of data, which would favor the stable case. The models did not perform well enough for a meaningful classification based on the trajectories. When the bodies passed very close, the difference between a collision and escape due to the catapulting effect was well below the accuracy of the models. Only the stable sequences with 800 time-steps were chosen train the neural network models. The Lyapunov time was calculated to relate the time to other chaotic systems and natural phenomena. Figure shows the Lyapunov lambda and time. A Model Time Unit (MTU) was calculated. The energy should be conserved in the system, so to see how it behaved, it was calculated for the simulation and for the neural network models.
 \end{itemize}
 \fi
 
@@ -227,9 +221,9 @@ Furthermore, the energy should be conserved in the system, so to see how it beha
 
 %%% - B5 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 %%% Customize this part: text between - B5 - and - E5 - must not appear in the final report 
-The training time varied between models when trained on 2xT4 GPUs. The RC trained in seconds in one go, while the LSTM needed more than 500 epochs and about 1 hour to achieve reasonable results. The TCN and TCN+RC trained faster/epoch than the LSTM and would get good results and stop-early after about 100-150 epochs, about 10 minutes.
+The training time varied between models when trained on 2xT4 GPUs. The RC trained in seconds in one go, while the LSTM needed more than 500 epochs and about 1 hour to achieve reasonable results. The TCN and TCN+RC trained faster/epoch than the LSTM and would get good results and stop-early after about 100-150 epochs -- about 10 minutes.
 
-As shown in figure \ref{fig:lyapunov}, the fitted line gives a Lyapunov time for the simulations of 2.49. This is analogous to about 3.75 days in real atmosphere forecasting \cite{Chattopadhyay2019}, thus forecasting more than 10 days tends to result in instability. In our case, as the forecast horizon is 600 time steps of 0.01, the time frame of stability of the system is close to its limit. An MTU was defined and used subsequently in the figures, where 0 was set at the start of the forecast after 200 time steps and the end of the forecast was at about \( \text{MTU} \approx 2.4 \). 
+As shown in figure \ref{fig:lyapunov}, the fitted line gives a Lyapunov time for the simulations of 2.49. This is analogous to about 3.75 days in real atmosphere forecasting \cite{Chattopadhyay2019}, so our forecast horizon of 600 time-steps corresponds roughly to 10 days. An MTU was defined and used in the figures, where 0 was set at the start of the forecast after 200 time-steps. 
 
 
 %%%%%% Some notes:
@@ -277,21 +271,21 @@ As shown in figure \ref{fig:lyapunov}, the fitted line gives a Lyapunov time for
     \centering
     \includegraphics[width=0.497\linewidth]{plot_1_Energy_Reservoir_marked.png}
     \includegraphics[width=0.497\linewidth]{plot_3_Energy_Reservoir_marked.png}
-    \caption{\textbf{Energy Conservation:} The kinetic, potential, and total energy of all bodies are shown in the figure for both the simulation and the RC model. In the simulation, energy is not conserved when the bodies pass close to one another. The RC model conserves energy to some extent, but deviations still occur. (a) and (b) show the same time series as figure \ref{fig:prediction_set_1_results} and \ref{fig:prediction_set_2_results} respectively.}
+    \caption{\textbf{Energy Conservation:} The kinetic, potential, and total energy of all bodies are shown in the figure for both the simulation and the RC model. In the simulation, energy is not conserved when the bodies pass close to one another. The RC model does not conserve energy, but it does not drift. (a) and (b) show the same time series as figure \ref{fig:prediction_set_1_results} and \ref{fig:prediction_set_2_results} respectively.}
     \label{fig:energy}
 \end{figure*}
 
-The bodies typically had two types of behaviors; when all three bodies interacted as in figure \ref{fig:prediction_set_1_results} and when one body would go off in its own orbit, while the other two interacted with higher frequency, as in figure \ref{fig:prediction_set_2_results}. The second type was more common, so the LSTM model would focus on learning that type of behavior where it was enough to learn the general direction of the bodies to get a low loss. The TCN would learn the behavior of the bodies to some extent, but it was only the RC model that actually learned how the bodies interacted. This is consistent with previous observations \cite{pathak2018model}. The TCN has a very jagged curve compared to the others, probably due to the lack of temporal continuity, but the noise dampened when combined with the RC.
+The bodies typically had two types of behaviors; when all three bodies interacted as in figure \ref{fig:prediction_set_1_results} and when one body would go off in its own orbit, while the other two interacted with higher frequency, as in figure \ref{fig:prediction_set_2_results}. The second type was more common, so the LSTM model would focus on learning that type of behavior where it was enough to learn the general direction of the bodies to get a low loss. The TCN would learn the behavior of the bodies to some extent, but it was only the RC model that actually learned how the bodies interacted. This is consistent with previous observations \cite{pathak2018model}. The TCN has a very jagged curve compared to the others, probably due to the lack of temporal continuity, but the noise dampened in the TCN+RC model.
 
-Table \ref{tab:distance_rmse_updated} shows the forecast quality for different forecast horizons. The RC performed best for short forecasts, but surprisingly, the TCN model, despite showing a higher error in the short term, eventually outperformed the RC at the longest forecast horizons (above 200 time steps), indicating its potential for long-range temporal dependencies when properly tuned. By combining the TCN for the long-range forecast accuracy and an RC for predicting the interaction between the bodies, the best results were achieved. It is interesting that between 200 and 600 time-steps, the rmse increases to more than double, and as the Lyapunov time is 2.49 (249 time-steps), chaotic behavior should be more common beyond this point.
+Table \ref{tab:distance_rmse_updated} shows the forecast quality for different forecast horizons. The RC performed best for short forecasts, but surprisingly, the TCN model, despite showing a higher error in the short term, eventually outperformed the RC at the longest forecast horizons (above 200 time-steps), indicating its potential for long-range temporal dependencies. By combining the TCN for the long-range forecast accuracy and an RC for predicting the interaction between the bodies, the best results were achieved. It is interesting that between 200 and 600 time-steps, the rmse increases to more than double, and as the Lyapunov time is 2.49 (249 time-steps), chaotic behavior should be more common beyond this point.
 
-The energy of the system plotted in figure \ref{fig:energy} shows how the kinetic and potential energy interact when the bodies pass close to each other. Ideally, the energy should always be conserved, but in the simulated system, it is evident that during close encounters of two or more bodies, the energy departs from its normal state. Since the time step in the simulation is fixed, this is expected. For the neural network in the example, the energy varies a lot more than the simulated. If a PINN would be used to account for energy fluctuations, the results may improve, but one would need to make sure that the simulated data would conserve energy better, e.g. by decreasing the time step when the bodies are close to one another.
+The energy of the system plotted in figure \ref{fig:energy} shows how the kinetic and potential energy interact when the bodies pass close to each other. Ideally, the energy should always be conserved, but in the simulated system, it is evident that during close encounters of two or more bodies, the energy departs from its normal state. Since the time step in the simulation is fixed, this is expected. For the neural network in the example, the energy varies a lot more than the simulated. If a PINN would be used to account for energy fluctuations, the results may improve, but one would need to make sure that the simulated data would conserve energy better, e.g. by decreasing the time step when the bodies are close to one another. %\cite{Szebehely1973}.
 
 
 %%%% This is the table in use:
 \begin{table}[htbp]
     \centering
-    \caption{Distance RMSE results for different models and forecast horizons (H) in time steps}
+    \caption{{\bf Distance RMSE results.} RC had the highest accuracy for short forecast horizons (H), but for longer forecasts TCN and TCN+RC performed better. LSTM was worse at all horizons.}
     \label{tab:distance_rmse_updated}
     \begin{tabular}{|l|c|c|c|c|c|c|}
         \hline
@@ -318,7 +312,7 @@ The energy of the system plotted in figure \ref{fig:energy} shows how the kineti
         \hline
         \textbf{Forecast} & \multicolumn{3}{c|}{\textbf{Reservoir}} & \multicolumn{3}{c|}{\textbf{LSTM}} & \multicolumn{3}{c|}{\textbf{TCN}} \\
         \textbf{Horizon} & \multicolumn{3}{c|}{\textbf{Model}} & \multicolumn{3}{c|}{\textbf{Model}} & \multicolumn{3}{c|}{\textbf{Model}} \\
-        \textbf{(Time Steps)} & \textbf{x} && \textbf{y} & \textbf{x} && \textbf{y} & \textbf{x} && \textbf{y} \\
+        \textbf{(time-steps)} & \textbf{x} && \textbf{y} & \textbf{x} && \textbf{y} & \textbf{x} && \textbf{y} \\
         \hline
         1   & 0.095 && 0.075 & 0.376 && 0.388 & 0.406 && 0.425 \\
         25  & 0.148 && 0.158 & 0.406 && 0.399 & 0.426 && 0.433 \\
@@ -384,9 +378,7 @@ The energy of the system plotted in figure \ref{fig:energy} shows how the kineti
 %%% - B6 - %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 %%% Customize this part: text between - B6 - and - E6 - must not appear in the final report 
 
-Due to the complexity of the chaotic system with three moving objects and their interactions, machine learning models had trouble predicting the outcome of the system. 
-Some models showed promise in predicting the trajectories of the bodies -- especially RC models, and to some extent also TCNs. LSTMs struggled to learn anything apart from the general direction of the particles. Classifying the system’s final state using neural networks proved difficult.
-Although model-free approaches such as RC were most reliable overall, convolutional architectures like TCNs show promising long-term forecasting capabilities, especially when combined with the skills of the RC model. Future work could look at training the model to predict the positional change in each time step instead of the position itself. In addition, by explicitly including the distance to other objects in the training, the model would better understand the interaction between two or more bodies. Another approach could be to investigate more hybrid architectures, incorporate PINNs as in \cite{RAISSI2019686}, or enforce energy constraints explicitly during training to further improve generalization and physical correctness. 
+Due to the complexity of the chaotic system with three moving objects and their interactions, machine learning models had trouble classifying the outcome of the system. LSTMs struggled to learn anything apart from the general direction of the bodies. Although model-free approaches such as RC were most reliable and showed promise in predicting the trajectories of the bodies, convolutional architectures like TCNs show promising long-term forecasting capabilities, especially when combined with the skills of the RC model. Future work could look at training the model to predict the positional change in each time step instead of the position itself. In addition, by explicitly including the distance to other objects in the training, the model would better understand the interaction between two or more bodies. Another approach could be to investigate more hybrid architectures, incorporate PINNs as in \cite{RAISSI2019686}, or enforce energy constraints explicitly during training to further improve generalization and physical correctness. 
 
 \iffalse
 \begin{itemize}
